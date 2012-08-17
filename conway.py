@@ -1,3 +1,4 @@
+import os
 import random
 import time
 import pygame
@@ -5,16 +6,22 @@ import pygame
 
 pygame.init()
 fpsClock = pygame.time.Clock()
+squaresize = 600
 
-window = pygame.display.set_mode((700,700))
+position = 300, 100
+os.environ['SDL_VIDEO_WINDOW_POS'] = str(position[0]) + "," + str(position[1])
+
+window = pygame.display.set_mode((squaresize,squaresize))
 
 grid = []
 prevgrid = []
-size = 70
+startgrid = []
+size = squaresize/10
 
 for i in range(size):
     grid.append([0 for j in range(size)])
     prevgrid.append([0 for j in range(size)])
+    startgrid.append([0 for j in range(size)])
 
 
 def evalLife(neighbors,row,cell):
@@ -68,16 +75,36 @@ def checkNeighbors(col,cell):
 
 
 
+def generateGlider(col=10,cell=10): 
+#need to check for legal glider position
+    grid[col][cell] = 1
+    grid[col][cell-1] = 1
+    grid[col-1][cell-2] = 1
+    grid[col-1][cell] = 1
+    grid[col-2][cell] = 1
 
-grid[10][10] = 1
-grid[10][9] = 1
-grid[9][8] = 1
-grid[9][10] = 1
-grid[8][10] = 1
+def generateRandom(n):
+    for x in range(n):
+        grid[random.randint(0,size-1)][random.randint(0,size-1)] = 1
+
+def saveStart():
+    for i in range(size):
+        for j in range(size):
+            startgrid[i][j] = grid[i][j]
+    with open('conway.txt','a') as f:
+        f.write('\n---------------New Conway-----------------\n')
+        for col in startgrid:
+            for cell in col:
+                f.write(str(cell)+" ")
+            f.write("\n")
+        f.write('\n---------------End Conway-----------------\n')
+
 
 
 
 def gameloop():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: sys.exit()
     for i in range(size):
         for j in range(size):
             prevgrid[i][j] = grid[i][j]
@@ -92,7 +119,29 @@ def gameloop():
     for row in range(size):
         for cell in range(size):
             grid[row][cell] = evalLife(checkNeighbors(row,cell),row,cell)
+    time.sleep(.1)
     gameloop()
 
-gameloop()
+generateGlider(5,8)
+generateRandom(300)
+saveStart()
+while(True):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: sys.exit()
+    for i in range(size):
+        for j in range(size):
+            prevgrid[i][j] = grid[i][j]
+    for row in range(size):
+        for cell in range(size):
+            if grid[row][cell] == 1:
+                pygame.draw.rect(window,pygame.Color(0,255,0),(row*10,cell*10,10,10))
+            else:
+                pygame.draw.rect(window,pygame.Color(255,255,255),(row*10,cell*10,10,10))
+    pygame.display.update()
+    fpsClock.tick(25)
+    for row in range(size):
+        for cell in range(size):
+            grid[row][cell] = evalLife(checkNeighbors(row,cell),row,cell)
+    time.sleep(.1)
+
 
